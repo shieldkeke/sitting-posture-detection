@@ -8,7 +8,7 @@ sitting posture detection device with arduino 、python
 
 接线图如下所示：
 
-![pic](README_img/pic-1666768569856-2.png)
+![pic](pic/pic.png)
 
 
 
