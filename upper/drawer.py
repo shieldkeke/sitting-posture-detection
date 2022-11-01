@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from PIL import Image
 import torchvision.transforms as transforms
+import time
 
 class Drawer:
     def __init__(self, opt, row = 2, col = 2) -> None:
@@ -14,6 +15,7 @@ class Drawer:
         self.config = opt
         self.data = np.zeros([self.row*self.col, 1, 3])
         self.model = torch.load('w.pt', map_location='cpu')
+        # self.model = torch.load('w.pt')
         self.model.eval().to(opt.device)
         self.classes = ['sit', 'right_up', 'left_up']
         img_trans = [
@@ -22,7 +24,9 @@ class Drawer:
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
         self.trans = transforms.Compose(img_trans)
+        self.font = cv2.FONT_HERSHEY_COMPLEX
         
+
     def color(self, k, for_train = False):
         if not for_train:
             # co1 = [70/255, 130/255, 180/255]  #dark blue
@@ -56,9 +60,11 @@ class Drawer:
         hot = cv2.resize(self.hot.astype(np.uint8), [750, 500],  interpolation=Image.BICUBIC)
         hot = cv2.applyColorMap(hot, cv2.COLORMAP_JET)
         
+        s = self.predict()
+        cv2.putText(img, s, (375, 200), self.font, 1, (240, 240, 240), 1)
         cv2.imshow('img', img)
         cv2.imshow('hot', hot)
-        self.predict()
+        
 
         ## save
         if IF_SAVE:
@@ -68,7 +74,7 @@ class Drawer:
         if IF_WAIT:
             cv2.waitKey(0)
         else:
-            cv2.waitKey(20)
+            cv2.waitKey(500)
 
     def getInput(self, img):
         img = Image.fromarray(img.astype(np.uint8))
@@ -76,12 +82,16 @@ class Drawer:
         return img
 
     def predict(self):
+
+        start = time.time()
         img = self.getInput(self.mat_input)
         img = torch.unsqueeze(img, 0)
         output = self.model(img)
         _, pred = output.topk(1, 1, True, True)
+        end = time.time()
 
-        print(self.classes[pred[0][0]])
+        print(self.classes[pred[0][0]], round((end - start)*1000, 2),'ms')
+        return self.classes[pred[0][0]] + f' {round((end - start)*1000, 2)}ms'
 
 if __name__ == "__main__":
     d = Drawer()
